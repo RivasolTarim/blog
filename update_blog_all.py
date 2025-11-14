@@ -4,15 +4,11 @@ import re
 RSS_URL = "https://www.rivasol.com.tr/index.php?route=journal3/blog/feed"
 README_FILE = "README.md"
 
-
 def fetch_rss_entries():
-    print("RSS okunuyor:", RSS_URL)
     response = requests.get(RSS_URL)
     response.raise_for_status()
-
     content = response.text
 
-    # RSS içinden title + link çekme
     items = re.findall(r"<item>(.*?)</item>", content, re.DOTALL)
     posts = []
 
@@ -24,8 +20,8 @@ def fetch_rss_entries():
             title = title_match.group(1).strip()
             link = link_match.group(1).strip()
             posts.append((title, link))
-
-    print(f"Toplam bulunan yazı sayısı: {len(posts)}")
+    
+    print("Toplam bulunan yazı sayısı:", len(posts))
     return posts
 
 
@@ -36,32 +32,23 @@ def update_readme(posts):
     start_tag = "<!-- BLOG-POST-LIST:START -->"
     end_tag = "<!-- BLOG-POST-LIST:END -->"
 
-    # Güçlü desen: tüm whitespace + satır sonlarını yakala
+    # Güçlü multiline eşleşmesi
     pattern = re.compile(
-        rf"{re.escape(start_tag)}[\s\S]*?{re.escape(end_tag)}",
-        re.MULTILINE,
+        start_tag + r"(.*?)" + end_tag,
+        re.DOTALL
     )
 
-    if not pattern.search(readme):
-        print("UYARI: README içinde BLOG-POST-LIST etiketleri bulunamadı!")
-        return
+    # Yeni içerik
+    list_text = "\n".join([f"- [{title}]({link})" for title, link in posts])
 
-    # İstersen sadece son 50 yazıyı listele (tamamını istiyorsan [:50] kısmını sil)
-    # posts_to_show = posts[:50]
-    posts_to_show = posts
+    new_block = f"{start_tag}\n{list_text}\n{end_tag}"
 
-    new_list = "\n".join(
-        f"- [{title}]({link})" for title, link in posts_to_show
-    )
-
-    replacement = f"{start_tag}\n{new_list}\n{end_tag}"
-
-    new_content = pattern.sub(replacement, readme)
+    updated = pattern.sub(new_block, readme)
 
     with open(README_FILE, "w", encoding="utf-8") as f:
-        f.write(new_content)
+        f.write(updated)
 
-    print("README.md başarıyla güncellendi (liste yazıldı).")
+    print("README.md başarıyla güncellendi.")
 
 
 if __name__ == "__main__":
