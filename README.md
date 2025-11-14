@@ -1,5 +1,39 @@
-# blog
-Rivasol® Blog RSS feed'inden tüm yazıları otomatik olarak çekip README dosyasında listeleyen GitHub Actions projesi.
+Rivasol Blog RSS Automation
+
+Bu depo, Rivasol® Resmî Blog içeriklerinin GitHub üzerinde düzenli olarak indekslenmesi ve güncellenmesi için oluşturulmuş otomasyon altyapısını içerir. Amaç, rivasol.com.tr üzerinde yayınlanan blog yazılarının RSS üzerinden çekilerek depo içerisinde arşivlenmesi, kontrol edilmesi ve harici projelerde kullanılabilecek merkezi bir içerik kaynağı oluşturmaktır.
+
+Depoda yer alan Python tabanlı otomasyon script’i:
+
+Rivasol blogunun RSS akışını tarar
+
+Yeni yayınlanan veya güncellenen içerikleri tespit eder
+
+README.md dosyasındaki “Son Blog Yazıları” bölümünü otomatik olarak günceller
+
+Arama motorları, entegrasyon sistemleri ve API yapıları için hafif, düzenli ve erişilebilir bir içerik indeksi oluşturur
+
+Bu yapı sayesinde blog içerikleri; SEO, içerik pazarlaması, sosyal medya otomasyonu, mailing sistemleri ve Rivasol’un geliştirdiği diğer dijital projeler tarafından merkezi olarak kullanılabilir.
+
+Blog RSS Feed
+
+Kaynak RSS adresi:
+https://www.rivasol.com.tr/index.php?route=journal3/blog/feed
+
+Kullanım Alanları
+
+Harici uygulamalara içerik besleme
+
+SEO içerik takibi ve dış optimizasyon
+
+Geliştiriciler için hafif içerik API’si
+
+İçerik üretim ve otomasyon projeleri
+
+Veri analizi ve zaman serisi içerik incelemeleri
+
+Hedef
+
+Rivasol blog içeriğinin dijital ekosistemlerde daha görünür, daha erişilebilir ve daha çok entegre edilebilir hâle gelmesi.
 
 ## Rivasol ® Blog
 
