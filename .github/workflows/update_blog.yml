@@ -1,13 +1,16 @@
-name: Update Blog Posts
+name: 🤖 Rivasol Blog Güncelle
 
 on:
   schedule:
-    # Her gün saat 09:00'da çalışır (UTC saat dilimine göre)
-    - cron: '0 9 * * *'
+    # Her gün saat 06:00'da çalışır (UTC) - Türkiye saati 09:00
+    - cron: '0 6 * * *'
   workflow_dispatch: # Manuel olarak tetikleyebilirsiniz
   push:
     branches:
       - main
+    paths:
+      - 'update_blog.py'
+      - '.github/workflows/update_blog.yml'
 
 jobs:
   update-blog:
