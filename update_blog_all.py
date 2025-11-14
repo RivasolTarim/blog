@@ -4,11 +4,15 @@ import re
 RSS_URL = "https://www.rivasol.com.tr/index.php?route=journal3/blog/feed"
 README_FILE = "README.md"
 
+
 def fetch_rss_entries():
-    response = requests.get(RSS_URL)
+    print(f"RSS okunuyor: {RSS_URL}")
+    response = requests.get(RSS_URL, timeout=30)
     response.raise_for_status()
+
     content = response.text
 
+    # <item> bloklarını al
     items = re.findall(r"<item>(.*?)</item>", content, re.DOTALL)
     posts = []
 
@@ -20,8 +24,8 @@ def fetch_rss_entries():
             title = title_match.group(1).strip()
             link = link_match.group(1).strip()
             posts.append((title, link))
-    
-    print("Toplam bulunan yazı sayısı:", len(posts))
+
+    print(f"Toplam bulunan yazı sayısı: {len(posts)}")
     return posts
 
 
@@ -29,26 +33,28 @@ def update_readme(posts):
     with open(README_FILE, "r", encoding="utf-8") as f:
         readme = f.read()
 
-    start_tag = "<!-- BLOG-POST-LIST:START -->"
-    end_tag = "<!-- BLOG-POST-LIST:END -->"
-
-    # Güçlü multiline eşleşmesi
-    pattern = re.compile(
-        start_tag + r"(.*?)" + end_tag,
-        re.DOTALL
+    # Etiketleri boşluklara toleranslı yakalayalım
+    pattern = (
+        r"(<!--\s*BLOG-POST-LIST:START\s*-->)"
+        r"([\s\S]*?)"
+        r"(<!--\s*BLOG-POST-LIST:END\s*-->)"
     )
 
-    # Yeni içerik
-    list_text = "\n".join([f"- [{title}]({link})" for title, link in posts])
+    new_list = "\n".join(f"- [{title}]({link})" for title, link in posts)
 
-    new_block = f"{start_tag}\n{list_text}\n{end_tag}"
+    def replacer(match):
+        start_tag = match.group(1)
+        end_tag = match.group(3)
+        return f"{start_tag}\n{new_list}\n{end_tag}"
 
-    updated = pattern.sub(new_block, readme)
+    new_content, count = re.subn(pattern, replacer, readme)
 
-    with open(README_FILE, "w", encoding="utf-8") as f:
-        f.write(updated)
-
-    print("README.md başarıyla güncellendi.")
+    if count == 0:
+        print("UYARI: README içinde BLOG-POST-LIST bloğu bulunamadı. Etiketleri kontrol et.")
+    else:
+        with open(README_FILE, "w", encoding="utf-8") as f:
+            f.write(new_content)
+        print(f"README.md başarıyla güncellendi. Güncellenen blok sayısı: {count}")
 
 
 if __name__ == "__main__":
