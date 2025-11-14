@@ -2,8 +2,8 @@ name: Update Blog Posts
 
 on:
   schedule:
-    - cron: "0 * * * *"   # Her saat başı çalışır
-  workflow_dispatch:       # Manuel tetikleme
+    - cron: "0 * * * *"
+  workflow_dispatch:
 
 jobs:
   update-readme:
