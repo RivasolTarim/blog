@@ -1,88 +1,54 @@
 import requests
-import xml.etree.ElementTree as ET
-from pathlib import Path
+import re
 
-# === AYARLAR ===
 RSS_URL = "https://www.rivasol.com.tr/index.php?route=journal3/blog/feed"
-README_PATH = Path("README.md")
+README_FILE = "README.md"
 
-START_TAG = "<!-- BLOG-POST-LIST:START -->"
-END_TAG = "<!-- BLOG-POST-LIST:END -->"
+def fetch_rss_entries():
+    print("RSS okunuyor:", RSS_URL)
+    response = requests.get(RSS_URL)
+    response.raise_for_status()
 
+    content = response.text
 
-def fetch_all_rss_items():
-    """RSS içindeki TÜM <item> kayıtlarını döndürür."""
-    resp = requests.get(RSS_URL, timeout=15)
-    resp.raise_for_status()
+    # RSS içinden title + link çekme
+    items = re.findall(r"<item>(.*?)</item>", content, re.DOTALL)
+    posts = []
 
-    root = ET.fromstring(resp.content)
+    for item in items:
+        title_match = re.search(r"<title><!\[CDATA\[(.*?)\]\]></title>", item)
+        link_match = re.search(r"<link>(.*?)</link>", item)
 
-    items = []
-    for item in root.findall(".//item"):
-        title_el = item.find("title")
-        link_el = item.find("link")
-        date_el = item.find("pubDate")
+        if title_match and link_match:
+            title = title_match.group(1).strip()
+            link = link_match.group(1).strip()
+            posts.append((title, link))
 
-        title = title_el.text.strip() if title_el is not None and title_el.text else "Başlıksız"
-        link = link_el.text.strip() if link_el is not None and link_el.text else "#"
-        pub_date = date_el.text.strip() if date_el is not None and date_el.text else ""
-
-        items.append(
-            {
-                "title": title,
-                "link": link,
-                "pub_date": pub_date,
-            }
-        )
-
-    return items
+    print(f"Toplam bulunan yazı sayısı: {len(posts)}")
+    return posts
 
 
-def build_markdown_list(items):
-    """Blog yazılarını Markdown liste formatına çevirir."""
-    if not items:
-        return "_Şu an için listelenecek blog yazısı bulunamadı._"
+def update_readme(posts):
+    with open(README_FILE, "r", encoding="utf-8") as f:
+        readme = f.read()
 
-    lines = []
-    for i in items:
-        if i["pub_date"]:
-            line = f"- [{i['title']}]({i['link']})  \n  _{i['pub_date']}_"
-        else:
-            line = f"- [{i['title']}]({i['link']})"
-        lines.append(line)
+    start_tag = "<!-- BLOG-POST-LIST:START -->"
+    end_tag = "<!-- BLOG-POST-LIST:END -->"
 
-    return "\n".join(lines)
+    new_list = "\n".join([f"- [{title}]({link})" for title, link in posts])
 
+    new_content = re.sub(
+        f"{start_tag}(.|\n)*?{end_tag}",
+        f"{start_tag}\n{new_list}\n{end_tag}",
+        readme
+    )
 
-def update_readme(new_block: str):
-    """README.md içindeki BLOG-POST-LIST blokunu günceller."""
-    if not README_PATH.exists():
-        raise SystemExit("README.md dosyası bulunamadı.")
+    with open(README_FILE, "w", encoding="utf-8") as f:
+        f.write(new_content)
 
-    text = README_PATH.read_text(encoding="utf-8")
-
-    if START_TAG not in text or END_TAG not in text:
-        raise SystemExit("README içinde başlangıç/bitiş etiketleri bulunamadı.")
-
-    start_idx = text.index(START_TAG) + len(START_TAG)
-    end_idx = text.index(END_TAG)
-
-    before = text[:start_idx]
-    after = text[end_idx:]
-
-    updated = before + "\n" + new_block + "\n" + after
-    README_PATH.write_text(updated, encoding="utf-8")
-
-
-def main():
-    print(f"RSS okunuyor: {RSS_URL}")
-    items = fetch_all_rss_items()
-    print("Toplam bulunan yazı sayısı:", len(items))
-
-    md_block = build_markdown_list(items)
-    update_readme(md_block)
     print("README.md başarıyla güncellendi.")
 
 
 if __name__ == "__main__":
-    main()
+    posts = fetch_rss_entries()
+    update_readme(posts)
