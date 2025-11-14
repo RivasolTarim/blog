@@ -9,10 +9,9 @@ def fetch_rss_entries():
     print(f"RSS okunuyor: {RSS_URL}")
     response = requests.get(RSS_URL, timeout=30)
     response.raise_for_status()
-
     content = response.text
 
-    # <item> bloklarını al
+    # RSS içinden <item> bloklarını çek
     items = re.findall(r"<item>(.*?)</item>", content, re.DOTALL)
     posts = []
 
@@ -20,12 +19,15 @@ def fetch_rss_entries():
         title_match = re.search(r"<title><!\[CDATA\[(.*?)\]\]></title>", item)
         link_match = re.search(r"<link>(.*?)</link>", item)
 
-        if title_match and link_match:
-            title = title_match.group(1).strip()
-            link = link_match.group(1).strip()
-            posts.append((title, link))
+        if not title_match or not link_match:
+            continue
 
-    print(f"Toplam bulunan yazı sayısı: {len(posts)}")
+        title = title_match.group(1).strip()
+        link = link_match.group(1).strip()
+
+        posts.append((title, link))
+
+    print(f"Toplam bulunan yazi sayisi: {len(posts)}")
     return posts
 
 
@@ -33,28 +35,37 @@ def update_readme(posts):
     with open(README_FILE, "r", encoding="utf-8") as f:
         readme = f.read()
 
-    # Etiketleri boşluklara toleranslı yakalayalım
-    pattern = (
-        r"(<!--\s*BLOG-POST-LIST:START\s*-->)"
-        r"([\s\S]*?)"
-        r"(<!--\s*BLOG-POST-LIST:END\s*-->)"
-    )
+    start_tag = "<!-- BLOG-POST-LIST:START -->"
+    end_tag = "<!-- BLOG-POST-LIST:END -->"
 
-    new_list = "\n".join(f"- [{title}]({link})" for title, link in posts)
+    start_index = readme.find(start_tag)
+    end_index = readme.find(end_tag)
 
-    def replacer(match):
-        start_tag = match.group(1)
-        end_tag = match.group(3)
-        return f"{start_tag}\n{new_list}\n{end_tag}"
+    if start_index == -1 or end_index == -1:
+        print("Uyarı: README.md içinde BLOG-POST-LIST etiketleri bulunamadı. Dosya değiştirilmedi.")
+        return
 
-    new_content, count = re.subn(pattern, replacer, readme)
+    # START etiketinin SONRASINA yazacağız
+    start_index += len(start_tag)
 
-    if count == 0:
-        print("UYARI: README içinde BLOG-POST-LIST bloğu bulunamadı. Etiketleri kontrol et.")
+    # İstersen buradan gösterilecek yazı sayısını kısaltabilirsin
+    max_posts = 20
+    limited_posts = posts[:max_posts]
+
+    new_list = "\n" + "\n".join(
+        f"- [{title}]({link})" for title, link in limited_posts
+    ) + "\n"
+
+    before = readme[:start_index]
+    after = readme[end_index:]
+    new_content = before + new_list + after
+
+    if new_content == readme:
+        print("Uyarı: README.md içeriği değişmedi (muhtemelen aynı liste zaten vardı).")
     else:
         with open(README_FILE, "w", encoding="utf-8") as f:
             f.write(new_content)
-        print(f"README.md başarıyla güncellendi. Güncellenen blok sayısı: {count}")
+        print("README.md başarıyla güncellendi.")
 
 
 if __name__ == "__main__":
