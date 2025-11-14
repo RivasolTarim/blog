@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3 
 # -*- coding: utf-8 -*-
 """
 Rivasol Blog RSS Otomasyonu
@@ -11,6 +11,7 @@ from datetime import datetime
 
 # Blog RSS Feed URL
 RSS_FEED_URL = "https://www.rivasol.com.tr/index.php?route=journal3/blog/feed"
+
 
 def read_readme():
     """README.md dosyasını oku"""
@@ -26,6 +27,7 @@ def read_readme():
         print(f"❌ Dosya okuma hatası: {e}")
         return ""
 
+
 def write_readme(content):
     """README.md dosyasını yaz"""
     try:
@@ -37,8 +39,13 @@ def write_readme(content):
         print(f"❌ Dosya yazma hatası: {e}")
         return False
 
-def fetch_blog_posts(limit=5):
-    """RSS Feed'den blog yazılarını çek"""
+
+def fetch_blog_posts(limit=None):
+    """
+    RSS Feed'den blog yazılarını çek.
+    limit=None -> tümünü getir
+    limit=N    -> ilk N yazıyı getir
+    """
     print(f"🔍 RSS Feed çekiliyor: {RSS_FEED_URL}")
     
     try:
@@ -53,10 +60,18 @@ def fetch_blog_posts(limit=5):
             print("❌ RSS Feed'de yazı bulunamadı!")
             return []
         
-        print(f"✅ {len(feed.entries)} blog yazısı bulundu")
+        print(f"✅ Feed'de toplam {len(feed.entries)} blog yazısı bulundu")
+        
+        # Limit uygulanacaksa burada uygula
+        entries = feed.entries
+        if limit is not None:
+            entries = entries[:limit]
+            print(f"➡️ İşlenecek yazı sayısı: {len(entries)} (limit={limit})")
+        else:
+            print(f"➡️ İşlenecek yazı sayısı: {len(entries)} (tümü)")
         
         posts = []
-        for entry in feed.entries[:limit]:
+        for entry in entries:
             # Başlık temizleme
             title = entry.get('title', 'Başlıksız Yazı').strip()
             
@@ -67,11 +82,10 @@ def fetch_blog_posts(limit=5):
             published = entry.get('published', '')
             if published:
                 try:
-                    # Tarihi daha okunabilir formata çevir
                     from email.utils import parsedate_to_datetime
                     dt = parsedate_to_datetime(published)
                     published_str = dt.strftime('%d %B %Y')
-                except:
+                except Exception:
                     published_str = published
             else:
                 published_str = 'Tarih belirtilmemiş'
@@ -92,6 +106,7 @@ def fetch_blog_posts(limit=5):
         traceback.print_exc()
         return []
 
+
 def format_posts_as_markdown(posts):
     """Blog yazılarını Markdown formatına çevir"""
     if not posts:
@@ -105,11 +120,12 @@ def format_posts_as_markdown(posts):
     
     return markdown
 
+
 def update_readme():
     """README'yi güncelle"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("🤖 Rivasol Blog Otomasyonu Başlatıldı")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
     
     # README'yi oku
     readme_content = read_readme()
@@ -117,9 +133,8 @@ def update_readme():
         print("❌ README.md bulunamadı veya okunamadı!")
         sys.exit(1)
     
-    # Blog yazılarını çek
-    posts = fetch_blog_posts(limit=5)
-    
+    # Blog yazılarını çek (TÜMÜ)
+    posts = fetch_blog_posts(limit=None)  # <= artık tüm yazılar
     if not posts:
         print("⚠️ Blog yazısı çekilemedi, güncelleme yapılmadı")
         sys.exit(0)
@@ -165,10 +180,11 @@ def update_readme():
         print(f"\n✅ README başarıyla güncellendi!")
         print(f"📊 {len(posts)} blog yazısı eklendi")
         print(f"⏰ Güncelleme zamanı: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
     else:
         print("\n❌ README güncellenemedi!")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     try:
